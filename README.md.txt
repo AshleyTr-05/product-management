@@ -29,3 +29,47 @@
 - [ ] REST API (Bonus)
 
 ## Project Structure
+src
+└── main
+    ├── java
+    │   └── com
+    │       └── example
+    │           └── productmanagement
+    │               ├── controller
+    │               │   ├── DashboardController.java
+    │               │   └── ProductController.java
+    │               │
+    │               ├── entity
+    │               │   └── Product.java
+    │               │
+    │               ├── repository
+    │               │   └── ProductRepository.java
+    │               │
+    │               ├── service
+    │               │   ├── ProductService.java
+    │               │   ├── ProductServiceImpl.java
+    │               │   └── ProductManagementApplication.java
+    │               
+    ├── resources
+    │   ├── static
+    │   ├── templates
+    │   │   ├── dashboard.html
+    │   │   ├── product-form.html
+    │   │   └── product-list.html
+    │   │
+    │   └── application.properties
+
+## Database Schema
+CREATE TABLE products (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    product_code VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(38,2) NOT NULL,
+    quantity INT NOT NULL,
+    category VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+## Known Issues
+- OneDrive syncing -> lock the files 
