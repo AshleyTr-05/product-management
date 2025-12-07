@@ -1,0 +1,180 @@
+package com.example.productmanagement.controller;
+
+import com.example.productmanagement.entity.Product;
+import com.example.productmanagement.service.ProductService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.math.BigDecimal;
+import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
+
+import org.springframework.data.domain.Sort;
+
+@Controller
+@RequestMapping("/products")
+public class ProductController {
+
+    private final ProductService productService;
+
+    @Autowired
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
+
+    // List all products
+    @GetMapping
+    public String listProducts(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir,
+            @RequestParam(required = false) String category,
+            Model model) {
+
+        if (sortBy == null || sortBy.isBlank()) {
+            sortBy = "id";
+        }
+
+        Sort sort = sortDir.equalsIgnoreCase("desc") ? Sort.by(sortBy).descending() : Sort.by(sortBy).ascending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Product> productPage;
+
+        if (category != null && !category.isBlank()) {
+            productPage = productService.getProductsByCategory(category, pageable);
+        } else {
+            productPage = productService.getPaginatedProducts(pageable);
+        }
+
+
+        model.addAttribute("products", productPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", productPage.getTotalPages());
+        model.addAttribute("size", size);
+
+        model.addAttribute("categories", productService.getAllCategories());
+        model.addAttribute("category", category);
+
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("sortDir", sortDir);
+        return "product-list"; // Returns product-list.html
+    }
+
+    // Show form for new product
+    @GetMapping("/new")
+    public String showNewForm(Model model) {
+        Product product = new Product();
+        model.addAttribute("product", product);
+        return "product-form";
+    }
+
+    // Show form for editing product
+    @GetMapping("/edit/{id}")
+    public String showEditForm(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
+        return productService.getProductById(id)
+                .map(product -> {
+                    model.addAttribute("product", product);
+                    return "product-form";
+                })
+                .orElseGet(() -> {
+                    redirectAttributes.addFlashAttribute("error", "Product not found");
+                    return "redirect:/products";
+                });
+    }
+
+    // Save product (create or update)
+    @PostMapping("/save")
+    public String saveProduct(
+            @Valid @ModelAttribute("product") Product product,
+            BindingResult result,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+
+        if (result.hasErrors()) {
+            return "product-form";
+        }
+
+        try {
+            productService.saveProduct(product);
+            redirectAttributes.addFlashAttribute("message", "Product saved successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error: " + e.getMessage());
+        }
+
+        return "redirect:/products";
+    }
+
+    // Delete product
+    @GetMapping("/delete/{id}")
+    public String deleteProduct(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            productService.deleteProduct(id);
+            redirectAttributes.addFlashAttribute("message", "Product deleted successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error deleting product: " + e.getMessage());
+        }
+        return "redirect:/products";
+    }
+
+    // Search products
+    @GetMapping("/search")
+    public String searchProducts(
+            @RequestParam("keyword") String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+
+            Model model) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Product> productPage = productService.searchProducts(keyword, pageable);
+
+        model.addAttribute("products", productPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", productPage.getTotalPages());
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("size", size);
+
+        model.addAttribute("categories", productService.getAllCategories());
+        model.addAttribute("category", null);
+
+        return "product-list";
+    }
+
+    @GetMapping("/advanced-search")
+    public String advancedSearch(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            Model model) {
+
+        if (name != null && name.isBlank()) {
+            name = null;
+        }
+        if (category != null && category.isBlank()) {
+            category = null;
+        }
+
+        List<Product> products = productService.advancedSearch(name, category, minPrice, maxPrice);
+        List<String> categories = productService.getAllCategories();
+
+        model.addAttribute("products", products);
+        model.addAttribute("categories", categories);
+
+        model.addAttribute("name", name);
+        model.addAttribute("category", category);
+        model.addAttribute("minPrice", minPrice);
+        model.addAttribute("maxPrice", maxPrice);
+
+        return "product-list";
+    }
+
+}
