@@ -1,9 +1,9 @@
 # Product Management System
 
 ## Student Information
-- **Name:** Tran
-- **Student ID:** [Your ID]
-- **Class:** [Your Class]
+- **Name:** Tran Thi Truc Mai
+- **Student ID:** ITCSIU23024
+- **Class:** Group 2 Lab 03
 
 ## Technologies Used
 - Spring Boot 3.3.x
